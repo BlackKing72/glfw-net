@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using JetBrains.Annotations;
+
+using static System.Runtime.InteropServices.RuntimeInformation;
 
 #pragma warning disable 0419
 
@@ -13,7 +17,7 @@ namespace GLFW
     ///     functions.
     /// </summary>
     [SuppressUnmanagedCodeSecurity]
-    public static class Glfw
+    public static partial class Glfw
     {
         #region Fields and Constants
 
@@ -21,13 +25,7 @@ namespace GLFW
         ///     The native library name,
         ///     <para>For Unix users using an installed version of GLFW, this needs refactored to <c>glfw</c>.</para>
         /// </summary>
-#if Windows
-        public const string LIBRARY = "glfw3";
-#elif OSX
-        public const string LIBRARY = "libglfw.3"; // mac
-#else
         public const string LIBRARY = "glfw";
-#endif
 
         private static readonly ErrorCallback errorCallback = GlfwError;
 
@@ -37,8 +35,22 @@ namespace GLFW
 
         static Glfw()
         {
+            NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), LibraryImporterResolver);
+
             Init();
             SetErrorCallback(errorCallback);
+        }
+
+        private static IntPtr LibraryImporterResolver (string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+        {
+            if (libraryName == LIBRARY)
+            {
+                if (IsOSPlatform(OSPlatform.Windows)) return NativeLibrary.Load("glfw3", assembly, searchPath);
+                if (IsOSPlatform(OSPlatform.Linux)) return NativeLibrary.Load("glfw", assembly, searchPath);
+                if (IsOSPlatform(OSPlatform.OSX)) return NativeLibrary.Load("libglfw.3", assembly, searchPath);
+            }
+
+            return IntPtr.Zero;
         }
 
         #endregion
@@ -73,16 +85,18 @@ namespace GLFW
         /// <param name="monitor">The monitor to query.</param>
         /// <param name="xScale">The scale on the x-axis.</param>
         /// <param name="yScale">The scale on the y-axis.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwGetMonitorContentScale", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void GetMonitorContentScale(IntPtr monitor, out float xScale, out float yScale);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetMonitorContentScale")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]        
+        public static partial void GetMonitorContentScale(IntPtr monitor, out float xScale, out float yScale);
 
         /// <summary>
         ///     Returns the current value of the user-defined pointer of the specified <paramref name="monitor" />.
         /// </summary>
         /// <param name="monitor">The monitor whose pointer to return.</param>
         /// <returns>The user-pointer, or <see cref="IntPtr.Zero" /> if none is defined.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwGetMonitorUserPointer", CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr GetMonitorUserPointer(IntPtr monitor);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetMonitorUserPointer")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial IntPtr GetMonitorUserPointer(IntPtr monitor);
 
         /// <summary>
         ///     This function sets the user-defined pointer of the specified <paramref name="monitor" />.
@@ -90,16 +104,18 @@ namespace GLFW
         /// </summary>
         /// <param name="monitor">The monitor whose pointer to set.</param>
         /// <param name="pointer">The user-defined pointer value.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetMonitorUserPointer", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetMonitorUserPointer(IntPtr monitor, IntPtr pointer);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetMonitorUserPointer")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void SetMonitorUserPointer(IntPtr monitor, IntPtr pointer);
 
         /// <summary>
         ///     Returns the opacity of the window, including any decorations.
         /// </summary>
         /// <param name="window">The window to query.</param>
         /// <returns>The opacity value of the specified window, a value between <c>0.0</c> and <c>1.0</c> inclusive.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwGetWindowOpacity", CallingConvention = CallingConvention.Cdecl)]
-        public static extern float GetWindowOpacity(IntPtr window);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetWindowOpacity")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial float GetWindowOpacity(IntPtr window);
 
         /// <summary>
         ///     Sets the opacity of the window, including any decorations.
@@ -110,8 +126,9 @@ namespace GLFW
         /// </summary>
         /// <param name="window">The window to set the opacity for.</param>
         /// <param name="opacity">The desired opacity of the specified window.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetWindowOpacity", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetWindowOpacity(IntPtr window, float opacity);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetWindowOpacity")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void SetWindowOpacity(IntPtr window, float opacity);
 
         /// <summary>
         ///     Sets hints for the next call to <see cref="CreateWindow" />. The hints, once set, retain their values until
@@ -124,8 +141,9 @@ namespace GLFW
         /// </summary>
         /// <param name="hint">The window hit to set.</param>
         /// <param name="value">The new value of the window hint.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwWindowHintString", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void WindowHintString(Hint hint, byte[] value);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwWindowHintString")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void WindowHintString(Hint hint, byte[] value);
 
         /// <summary>
         ///     Helper function to call <see cref="WindowHintString(Hint, byte[])" /> with UTF-8 encoding.
@@ -163,8 +181,9 @@ namespace GLFW
         /// <param name="window">The window to query.</param>
         /// <param name="xScale">The content scale on the x-axis.</param>
         /// <param name="yScale">The content scale on the y-axis.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwGetWindowContentScale", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void GetWindowContentScale(IntPtr window, out float xScale, out float yScale);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetWindowContentScale")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void GetWindowContentScale(IntPtr window, out float xScale, out float yScale);
 
         /// <summary>
         ///     Requests user attention to the specified <paramref name="window" />. On platforms where this is not supported,
@@ -176,8 +195,9 @@ namespace GLFW
         ///     </para>
         /// </summary>
         /// <param name="window">The window to request user attention to.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwRequestWindowAttention", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void RequestWindowAttention(IntPtr window);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwRequestWindowAttention")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void RequestWindowAttention(IntPtr window);
 
         /// <summary>
         ///     This function returns whether raw mouse motion is supported on the current system.
@@ -187,8 +207,10 @@ namespace GLFW
         ///     </para>
         /// </summary>
         /// <returns><c>true</c> if raw mouse motion is supported on the current machine, or <c>false</c> otherwise.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwRawMouseMotionSupported", CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool RawMouseMotionSupported();
+        [LibraryImport(LIBRARY, EntryPoint = "glfwRawMouseMotionSupported")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool RawMouseMotionSupported();
 
         /// <summary>
         ///     Sets the maximization callback of the specified <paramref name="window," /> which is called when the window is
@@ -197,8 +219,9 @@ namespace GLFW
         /// <param name="window">The window whose callback to set.</param>
         /// <param name="cb">The new callback, or <c>null</c> to remove the currently set callback.</param>
         /// <returns>The previously set callback, or <c>null</c> if no callback was set or the library had not been initialized.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetWindowMaximizeCallback", CallingConvention = CallingConvention.Cdecl)]
-        public static extern WindowMaximizedCallback SetWindowMaximizeCallback(IntPtr window,
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetWindowMaximizeCallback")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial WindowMaximizedCallback SetWindowMaximizeCallback(IntPtr window,
             WindowMaximizedCallback cb);
 
         /// <summary>
@@ -208,9 +231,9 @@ namespace GLFW
         /// <param name="window">The window whose callback to set.</param>
         /// <param name="cb">The new callback, or <c>null</c> to remove the currently set callback</param>
         /// <returns>The previously set callback, or <c>null</c> if no callback was set or the library had not been initialized.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetWindowContentScaleCallback",
-            CallingConvention = CallingConvention.Cdecl)]
-        public static extern WindowContentsScaleCallback SetWindowContentScaleCallback(IntPtr window,
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetWindowContentScaleCallback")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial WindowContentsScaleCallback SetWindowContentScaleCallback(IntPtr window,
             WindowContentsScaleCallback cb);
 
         /// <summary>
@@ -219,8 +242,9 @@ namespace GLFW
         /// </summary>
         /// <param name="key">The named key to query.</param>
         /// <returns>The platform-specific scan-code for the key, or -1 if an error occurred.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwGetKeyScancode", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int GetKeyScanCode(Keys key);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetKeyScancode")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial int GetKeyScanCode(Keys key);
 
         /// <summary>
         ///     Sets the value of an attribute of the specified window.
@@ -246,11 +270,13 @@ namespace GLFW
         /// </param>
         /// <param name="attr">A supported window attribute.</param>
         /// <param name="value">The value to set.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetWindowAttrib", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetWindowAttribute(IntPtr window, WindowAttribute attr, bool value);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetWindowAttrib")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void SetWindowAttribute(IntPtr window, WindowAttribute attr, [MarshalAs(UnmanagedType.Bool)] bool value);
 
-        [DllImport(LIBRARY, EntryPoint = "glfwGetJoystickHats", CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr GetJoystickHats(int joystickId, out int count);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetJoystickHats")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial IntPtr GetJoystickHats(int joystickId, out int count);
 
         /// <summary>
         ///     Returns the state of all hats of the specified joystick as a bitmask.
@@ -270,8 +296,9 @@ namespace GLFW
             return hat;
         }
 
-        [DllImport(LIBRARY, EntryPoint = "glfwGetJoystickGUID", CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr GetJoystickGuidPrivate(int joystickId);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetJoystickGUID")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial IntPtr GetJoystickGuidPrivate(int joystickId);
 
         /// <summary>
         ///     Returns the SDL compatible GUID, as a hexadecimal string, of the specified joystick.
@@ -293,8 +320,9 @@ namespace GLFW
         /// </summary>
         /// <param name="joystickId">The joystick whose pointer to return.</param>
         /// <returns>The user-defined pointer, or <see cref="IntPtr.Zero" /> if never defined.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwGetJoystickUserPointer", CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr GetJoystickUserPointer(int joystickId);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetJoystickUserPointer")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial IntPtr GetJoystickUserPointer(int joystickId);
 
         /// <summary>
         ///     This function sets the user-defined pointer of the specified joystick.
@@ -302,19 +330,24 @@ namespace GLFW
         /// </summary>
         /// <param name="joystickId">The joystick whose pointer to set.</param>
         /// <param name="pointer">The new value.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetJoystickUserPointer", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetJoystickUserPointer(int joystickId, IntPtr pointer);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetJoystickUserPointer")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void SetJoystickUserPointer(int joystickId, IntPtr pointer);
 
         /// <summary>
         ///     Returns whether the specified joystick is both present and has a gamepad mapping.
         /// </summary>
         /// <param name="joystickId">The joystick to query.</param>
         /// <returns><c>true</c> if a joystick is both present and has a gamepad mapping, or <c>false</c> otherwise.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwJoystickIsGamepad", CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool JoystickIsGamepad(int joystickId);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwJoystickIsGamepad")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool JoystickIsGamepad(int joystickId);
 
-        [DllImport(LIBRARY, EntryPoint = "glfwUpdateGamepadMappings", CallingConvention = CallingConvention.Cdecl)]
-        private static extern bool UpdateGamepadMappings([NotNull] byte[] mappings);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwUpdateGamepadMappings")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool UpdateGamepadMappings([NotNull] byte[] mappings);
 
         /// <summary>
         ///     Parses the specified string and updates the internal list with any gamepad mappings it finds.
@@ -330,8 +363,9 @@ namespace GLFW
             return UpdateGamepadMappings(Encoding.ASCII.GetBytes(mappings));
         }
 
-        [DllImport(LIBRARY, EntryPoint = "glfwGetGamepadName", CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr GetGamepadNamePrivate(int gamepadId);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetGamepadName")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial IntPtr GetGamepadNamePrivate(int gamepadId);
 
         /// <summary>
         ///     Returns the human-readable name of the gamepad from the gamepad mapping assigned to the specified joystick.
@@ -356,8 +390,10 @@ namespace GLFW
         ///     <c>true</c> if successful, or <c>false</c> if no joystick is connected, it has no gamepad mapping or an error
         ///     occurred.
         /// </returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwGetGamepadState", CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool GetGamepadState(int id, out GamePadState state);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetGamepadState")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool GetGamepadState(int id, out GamePadState state);
 
         #region Properties
 
@@ -475,8 +511,9 @@ namespace GLFW
         ///     <see cref="Hint.CocoaMenuBar" />, and <see cref="Hint.CocoaChDirResources" />.
         /// </param>
         /// <param name="value">The value of the hint.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwInitHint", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void InitHint(Hint hint, bool value);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwInitHint")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void InitHint(Hint hint, [MarshalAs(UnmanagedType.Bool)] bool value);
 
         /// <summary>
         ///     This function initializes the GLFW library. Before most GLFW functions can be used, GLFW must be initialized, and
@@ -492,8 +529,10 @@ namespace GLFW
         ///     </para>
         /// </summary>
         /// <returns><c>true</c> if successful, or <c>false</c> if an error occurred.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwInit", CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool Init();
+        [LibraryImport(LIBRARY, EntryPoint = "glfwInit")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool Init();
 
         /// <summary>
         ///     This function destroys all remaining windows and cursors, restores any modified gamma ramps and frees any other
@@ -507,8 +546,9 @@ namespace GLFW
         ///     The contexts of any remaining windows must not be current on any other thread when this function
         ///     is called.
         /// </note>
-        [DllImport(LIBRARY, EntryPoint = "glfwTerminate", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void Terminate();
+        [LibraryImport(LIBRARY, EntryPoint = "glfwTerminate")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void Terminate();
 
         /// <summary>
         ///     Sets the error callback, which is called with an error code and a human-readable description each
@@ -516,12 +556,14 @@ namespace GLFW
         /// </summary>
         /// <param name="errorHandler">The callback function, or <c>null</c> to unbind this callback.</param>
         /// <returns>The previously set callback function, or <c>null</c> if no callback was already set.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetErrorCallback", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.FunctionPtr, MarshalTypeRef = typeof(ErrorCallback))]
-        public static extern ErrorCallback SetErrorCallback(ErrorCallback errorHandler);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetErrorCallback")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.FunctionPtr)]
+        public static partial ErrorCallback SetErrorCallback([MarshalAs(UnmanagedType.FunctionPtr)] ErrorCallback errorHandler);
 
-        [DllImport(LIBRARY, EntryPoint = "glfwCreateWindow", CallingConvention = CallingConvention.Cdecl)]
-        private static extern Window CreateWindow(int width, int height, byte[] title, Monitor monitor, Window share);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwCreateWindow")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial Window CreateWindow(int width, int height, byte[] title, Monitor monitor, Window share);
 
         /// <summary>
         ///     This function destroys the specified window and its context. On calling this function, no further callbacks will be
@@ -529,24 +571,27 @@ namespace GLFW
         ///     <para>If the context of the specified window is current on the main thread, it is detached before being destroyed.</para>
         /// </summary>
         /// <param name="window">A window instance.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwDestroyWindow", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void DestroyWindow(Window window);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwDestroyWindow")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void DestroyWindow(Window window);
 
         /// <summary>
         ///     This function makes the specified window visible if it was previously hidden. If the window is already visible or
         ///     is in full screen mode, this function does nothing.
         /// </summary>
         /// <param name="window">A window instance.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwShowWindow", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void ShowWindow(Window window);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwShowWindow")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void ShowWindow(Window window);
 
         /// <summary>
         ///     This function hides the specified window if it was previously visible. If the window is already hidden or is in
         ///     full screen mode, this function does nothing.
         /// </summary>
         /// <param name="window">A window instance.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwHideWindow", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void HideWindow(Window window);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwHideWindow")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void HideWindow(Window window);
 
         /// <summary>
         ///     This function retrieves the position, in screen coordinates, of the upper-left corner of the client area of the
@@ -555,8 +600,9 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="x">The x-coordinate of the upper-left corner of the client area.</param>
         /// <param name="y">The y-coordinate of the upper-left corner of the client area.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwGetWindowPos", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void GetWindowPosition(Window window, out int x, out int y);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetWindowPos")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void GetWindowPosition(Window window, out int x, out int y);
 
         /// <summary>
         ///     Sets the position, in screen coordinates, of the upper-left corner of the client area of the
@@ -574,8 +620,9 @@ namespace GLFW
         ///     The window manager may put limits on what positions are allowed. GLFW cannot and should not override these
         ///     limits.
         /// </remarks>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetWindowPos", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetWindowPosition(Window window, int x, int y);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetWindowPos")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void SetWindowPosition(Window window, int x, int y);
 
         /// <summary>
         ///     This function retrieves the size, in screen coordinates, of the client area of the specified window.
@@ -587,8 +634,9 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="width">The width, in screen coordinates.</param>
         /// <param name="height">The height, in screen coordinates.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwGetWindowSize", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void GetWindowSize(Window window, out int width, out int height);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetWindowSize")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void GetWindowSize(Window window, out int width, out int height);
 
         /// <summary>
         ///     Sets the size, in screen coordinates, of the client area of the specified window.
@@ -602,8 +650,9 @@ namespace GLFW
         /// <param name="width">The desired width, in screen coordinates, of the window client area.</param>
         /// <param name="height">The desired height, in screen coordinates, of the window client area.</param>
         /// <remarks>The window manager may put limits on what sizes are allowed. GLFW cannot and should not override these limits.</remarks>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetWindowSize", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetWindowSize(Window window, int width, int height);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetWindowSize")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void SetWindowSize(Window window, int width, int height);
 
         /// <summary>
         ///     This function retrieves the size, in pixels, of the framebuffer of the specified window.
@@ -612,8 +661,9 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="width">The width, in pixels, of the framebuffer.</param>
         /// <param name="height">The height, in pixels, of the framebuffer.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwGetFramebufferSize", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void GetFramebufferSize(Window window, out int width, out int height);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetFramebufferSize")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void GetFramebufferSize(Window window, out int width, out int height);
 
         /// <summary>
         ///     Sets the position callback of the specified window, which is called when the window is moved.
@@ -622,10 +672,11 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="positionCallback">The position callback to be invoked on position changes.</param>
         /// <returns>The previously set callback, or <c>null</c> if no callback was set or the library had not been initialized.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetWindowPosCallback", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.FunctionPtr, MarshalTypeRef = typeof(PositionCallback))]
-        public static extern PositionCallback SetWindowPositionCallback(Window window,
-            PositionCallback positionCallback);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetWindowPosCallback")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.FunctionPtr)]
+        public static partial PositionCallback SetWindowPositionCallback(Window window,
+            [MarshalAs(UnmanagedType.FunctionPtr)] PositionCallback positionCallback);
 
         /// <summary>
         ///     Sets the size callback of the specified window, which is called when the window is resized.
@@ -634,25 +685,28 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="sizeCallback">The size callback to be invoked on size changes.</param>
         /// <returns>The previously set callback, or <c>null</c> if no callback was set or the library had not been initialized.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetWindowSizeCallback", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.FunctionPtr, MarshalTypeRef = typeof(SizeCallback))]
-        public static extern SizeCallback SetWindowSizeCallback(Window window, SizeCallback sizeCallback);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetWindowSizeCallback")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.FunctionPtr)]
+        public static partial SizeCallback SetWindowSizeCallback(Window window, [MarshalAs(UnmanagedType.FunctionPtr)] SizeCallback sizeCallback);
 
         /// <summary>
         ///     Sets the window title, encoded as UTF-8, of the specified window.
         /// </summary>
         /// <param name="window">A window instance.</param>
         /// <param name="title">The title as an array of UTF-8 encoded bytes.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetWindowTitle", CallingConvention = CallingConvention.Cdecl)]
-        private static extern void SetWindowTitle(Window window, byte[] title);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetWindowTitle")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial void SetWindowTitle(Window window, byte[] title);
 
         /// <summary>
         ///     This function brings the specified window to front and sets input focus. The window should already be visible and
         ///     not iconified.
         /// </summary>
         /// <param name="window">The window.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwFocusWindow", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void FocusWindow(Window window);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwFocusWindow")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void FocusWindow(Window window);
 
         /// <summary>
         ///     Sets the focus callback of the specified window, which is called when the window gains or loses input
@@ -664,9 +718,10 @@ namespace GLFW
         /// </summary>
         /// <param name="window">A window instance.</param>
         /// <param name="focusCallback">The new callback, or <c>null</c> to remove the currently set callback.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetWindowFocusCallback", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.FunctionPtr, MarshalTypeRef = typeof(FocusCallback))]
-        public static extern FocusCallback SetWindowFocusCallback(Window window, FocusCallback focusCallback);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetWindowFocusCallback")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.FunctionPtr)]
+        public static partial FocusCallback SetWindowFocusCallback(Window window, [MarshalAs(UnmanagedType.FunctionPtr)] FocusCallback focusCallback);
 
         /// <summary>
         ///     This function retrieves the major, minor and revision numbers of the GLFW library.
@@ -679,8 +734,9 @@ namespace GLFW
         /// <param name="minor">The minor.</param>
         /// <param name="revision">The revision.</param>
         /// <seealso cref="Version" />
-        [DllImport(LIBRARY, EntryPoint = "glfwGetVersion", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void GetVersion(out int major, out int minor, out int revision);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetVersion")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void GetVersion(out int major, out int minor, out int revision);
 
         /// <summary>
         ///     Gets the compile-time generated version string of the GLFW library binary.
@@ -688,20 +744,25 @@ namespace GLFW
         /// </summary>
         /// <returns>A pointer to the null-terminated UTF-8 encoded version string.</returns>
         /// <seealso cref="VersionString" />
-        [DllImport(LIBRARY, EntryPoint = "glfwGetVersionString", CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr GetVersionString();
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetVersionString")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial IntPtr GetVersionString();
 
-        [DllImport(LIBRARY, EntryPoint = "glfwGetTime", CallingConvention = CallingConvention.Cdecl)]
-        private static extern double GetTime();
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetTime")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial double GetTime();
 
-        [DllImport(LIBRARY, EntryPoint = "glfwSetTime", CallingConvention = CallingConvention.Cdecl)]
-        private static extern void SetTime(double time);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetTime")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial void SetTime(double time);
 
-        [DllImport(LIBRARY, EntryPoint = "glfwGetTimerFrequency", CallingConvention = CallingConvention.Cdecl)]
-        private static extern ulong GetTimerFrequency();
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetTimerFrequency")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial ulong GetTimerFrequency();
 
-        [DllImport(LIBRARY, EntryPoint = "glfwGetTimerValue", CallingConvention = CallingConvention.Cdecl)]
-        private static extern ulong GetTimerValue();
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetTimerValue")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial ulong GetTimerValue();
 
         /// <summary>
         ///     This function retrieves the size, in screen coordinates, of each edge of the frame of the specified window.
@@ -719,8 +780,9 @@ namespace GLFW
         /// <param name="top">The size, in screen coordinates, of the top edge of the window frame</param>
         /// <param name="right">The size, in screen coordinates, of the right edge of the window frame.</param>
         /// <param name="bottom">The size, in screen coordinates, of the bottom edge of the window frame</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwGetWindowFrameSize", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void GetWindowFrameSize(Window window, out int left, out int top, out int right,
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetWindowFrameSize")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void GetWindowFrameSize(Window window, out int left, out int top, out int right,
             out int bottom);
 
         /// <summary>
@@ -729,16 +791,18 @@ namespace GLFW
         ///     <para>If the specified window is a full screen window, this function does nothing.</para>
         /// </summary>
         /// <param name="window">A window instance.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwMaximizeWindow", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void MaximizeWindow(Window window);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwMaximizeWindow")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void MaximizeWindow(Window window);
 
         /// <summary>
         ///     This function iconifies (minimizes) the specified window if it was previously restored.
         ///     <para>If the window is already iconified, this function does nothing.</para>
         /// </summary>
         /// <param name="window">A window instance.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwIconifyWindow", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void IconifyWindow(Window window);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwIconifyWindow")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void IconifyWindow(Window window);
 
         /// <summary>
         ///     This function restores the specified window if it was previously iconified (minimized) or maximized.
@@ -749,8 +813,9 @@ namespace GLFW
         ///     </para>
         /// </summary>
         /// <param name="window">A window instance.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwRestoreWindow", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void RestoreWindow(Window window);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwRestoreWindow")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void RestoreWindow(Window window);
 
         /// <summary>
         ///     This function makes the OpenGL or OpenGL ES context of the specified window current on the calling thread.
@@ -761,8 +826,9 @@ namespace GLFW
         ///     <para>By default, making a context non-current implicitly forces a pipeline flush.</para>
         /// </summary>
         /// <param name="window">A window instance.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwMakeContextCurrent", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void MakeContextCurrent(Window window);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwMakeContextCurrent")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void MakeContextCurrent(Window window);
 
         /// <summary>
         ///     This function swaps the front and back buffers of the specified window when rendering with OpenGL or OpenGL ES.
@@ -773,8 +839,9 @@ namespace GLFW
         ///     <para>This function does not apply to Vulkan.</para>
         /// </summary>
         /// <param name="window">A window instance.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwSwapBuffers", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SwapBuffers(Window window);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSwapBuffers")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void SwapBuffers(Window window);
 
         /// <summary>
         ///     Sets the swap interval for the current OpenGL or OpenGL ES context, i.e. the number of screen updates
@@ -793,8 +860,9 @@ namespace GLFW
         ///     The minimum number of screen updates to wait for until the buffers are swapped by
         ///     <see cref="SwapBuffers" />.
         /// </param>
-        [DllImport(LIBRARY, EntryPoint = "glfwSwapInterval", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SwapInterval(int interval);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSwapInterval")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void SwapInterval(int interval);
 
         /// <summary>
         ///     Gets whether the specified API extension is supported by the current OpenGL or OpenGL ES context.
@@ -802,22 +870,27 @@ namespace GLFW
         /// </summary>
         /// <param name="extension">The extension name as an array of ASCII encoded bytes.</param>
         /// <returns><c>true</c> if the extension is supported; otherwise <c>false</c>.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwExtensionSupported", CallingConvention = CallingConvention.Cdecl)]
-        private static extern bool GetExtensionSupported(byte[] extension);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwExtensionSupported")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool GetExtensionSupported(byte[] extension);
 
         /// <summary>
         ///     This function resets all window hints to their default values.
         /// </summary>
-        [DllImport(LIBRARY, EntryPoint = "glfwDefaultWindowHints", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void DefaultWindowHints();
+        [LibraryImport(LIBRARY, EntryPoint = "glfwDefaultWindowHints")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void DefaultWindowHints();
 
         /// <summary>
         ///     Gets the value of the close flag of the specified window.
         /// </summary>
         /// <param name="window">A window instance.</param>
         /// <returns><c>true</c> if close flag is present; otherwise <c>false</c>.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwWindowShouldClose", CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool WindowShouldClose(Window window);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwWindowShouldClose")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool WindowShouldClose(Window window);
 
         /// <summary>
         ///     Sets the value of the close flag of the specified window.
@@ -825,8 +898,9 @@ namespace GLFW
         /// </summary>
         /// <param name="window">A window instance.</param>
         /// <param name="close"><c>true</c> to set close flag, or <c>false</c> to cancel flag.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetWindowShouldClose", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetWindowShouldClose(Window window, bool close);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetWindowShouldClose")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void SetWindowShouldClose(Window window, [MarshalAs(UnmanagedType.Bool)] bool close);
 
         /// <summary>
         ///     Sets the icon of the specified window. If passed an array of candidate images, those of or closest to
@@ -839,8 +913,9 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="count">The number of images in <paramref name="images" />.</param>
         /// <param name="images">An array of icon images.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetWindowIcon", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetWindowIcon(Window window, int count, Image[] images);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetWindowIcon")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void SetWindowIcon(Window window, int count, Image[] images);
 
         /// <summary>
         ///     This function puts the calling thread to sleep until at least one event is available in the event queue. Once one
@@ -857,8 +932,9 @@ namespace GLFW
         ///         contents of your window when necessary during such operations.
         ///     </para>
         /// </summary>
-        [DllImport(LIBRARY, EntryPoint = "glfwWaitEvents", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void WaitEvents();
+        [LibraryImport(LIBRARY, EntryPoint = "glfwWaitEvents")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void WaitEvents();
 
         /// <summary>
         ///     This function processes only those events that are already in the event queue and then returns immediately.
@@ -873,15 +949,17 @@ namespace GLFW
         ///         causing callbacks to be called outside of a call to one of the event processing functions.
         ///     </para>
         /// </summary>
-        [DllImport(LIBRARY, EntryPoint = "glfwPollEvents", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void PollEvents();
+        [LibraryImport(LIBRARY, EntryPoint = "glfwPollEvents")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void PollEvents();
 
         /// <summary>
         ///     This function posts an empty event from the current thread to the event queue, causing <see cref="WaitEvents" /> or
         ///     <see cref="WaitEventsTimeout " /> to return.
         /// </summary>
-        [DllImport(LIBRARY, EntryPoint = "glfwPostEmptyEvent", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void PostEmptyEvent();
+        [LibraryImport(LIBRARY, EntryPoint = "glfwPostEmptyEvent")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void PostEmptyEvent();
 
         /// <summary>
         ///     This function puts the calling thread to sleep until at least one event is available in the event queue, or until
@@ -900,8 +978,9 @@ namespace GLFW
         ///     </para>
         /// </summary>
         /// <param name="timeout">The maximum amount of time, in seconds, to wait.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwWaitEventsTimeout", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void WaitEventsTimeout(double timeout);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwWaitEventsTimeout")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void WaitEventsTimeout(double timeout);
 
         /// <summary>
         ///     Sets the close callback of the specified window, which is called when the user attempts to close the
@@ -910,26 +989,31 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="closeCallback">The new callback, or <c>null</c> to remove the currently set callback.</param>
         /// <returns>The previously set callback, or <c>null</c> if no callback was set or the library had not been initialized.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetWindowCloseCallback", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.FunctionPtr, MarshalTypeRef = typeof(WindowCallback))]
-        public static extern WindowCallback SetCloseCallback(Window window, WindowCallback closeCallback);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetWindowCloseCallback")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.FunctionPtr)]
+        public static partial WindowCallback SetCloseCallback(Window window, [MarshalAs(UnmanagedType.FunctionPtr)] WindowCallback closeCallback);
 
-        [DllImport(LIBRARY, EntryPoint = "glfwGetPrimaryMonitor", CallingConvention = CallingConvention.Cdecl)]
-        private static extern Monitor GetPrimaryMonitor();
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetPrimaryMonitor")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial Monitor GetPrimaryMonitor();
 
-        [DllImport(LIBRARY, EntryPoint = "glfwGetVideoMode", CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr GetVideoModeInternal(Monitor monitor);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetVideoMode")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial IntPtr GetVideoModeInternal(Monitor monitor);
 
-        [DllImport(LIBRARY, EntryPoint = "glfwGetVideoModes", CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr GetVideoModes(Monitor monitor, out int count);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetVideoModes")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial IntPtr GetVideoModes(Monitor monitor, out int count);
 
         /// <summary>
         ///     Gets the handle of the monitor that the specified window is in full screen on.
         /// </summary>
         /// <param name="window">A window instance.</param>
         /// <returns>The monitor, or <see cref="Monitor.None" /> if the window is in windowed mode or an error occurred.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwGetWindowMonitor", CallingConvention = CallingConvention.Cdecl)]
-        public static extern Monitor GetWindowMonitor(Window window);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetWindowMonitor")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial Monitor GetWindowMonitor(Window window);
 
         /// <summary>
         ///     Sets the monitor that the window uses for full screen mode or, if the monitor is
@@ -958,12 +1042,14 @@ namespace GLFW
         /// <param name="width">The desired width, in screen coordinates, of the client area or video mode.</param>
         /// <param name="height">The desired height, in screen coordinates, of the client area or video mode.</param>
         /// <param name="refreshRate">The desired refresh rate, in Hz, of the video mode, or <see cref="Constants.Default" />.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetWindowMonitor", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetWindowMonitor(Window window, Monitor monitor, int x, int y, int width, int height,
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetWindowMonitor")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void SetWindowMonitor(Window window, Monitor monitor, int x, int y, int width, int height,
             int refreshRate);
 
-        [DllImport(LIBRARY, EntryPoint = "glfwGetGammaRamp", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern IntPtr GetGammaRampInternal(Monitor monitor);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetGammaRamp")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        internal static partial IntPtr GetGammaRampInternal(Monitor monitor);
 
         /// <summary>
         ///     Sets the current gamma ramp for the specified monitor.
@@ -975,8 +1061,9 @@ namespace GLFW
         /// </summary>
         /// <param name="monitor">The monitor whose gamma ramp to set.</param>
         /// <param name="gammaRamp">The gamma ramp to use.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetGammaRamp", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetGammaRamp(Monitor monitor, GammaRamp gammaRamp);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetGammaRamp")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void SetGammaRamp(Monitor monitor, GammaRamp gammaRamp);
 
         /// <summary>
         ///     This function generates a 256-element gamma ramp from the specified exponent and then calls
@@ -985,14 +1072,17 @@ namespace GLFW
         /// </summary>
         /// <param name="monitor">The monitor whose gamma ramp to set.</param>
         /// <param name="gamma">The desired exponent.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetGamma", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetGamma(Monitor monitor, float gamma);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetGamma")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void SetGamma(Monitor monitor, float gamma);
 
-        [DllImport(LIBRARY, EntryPoint = "glfwGetClipboardString", CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr GetClipboardStringInternal(Window window);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetClipboardString")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial IntPtr GetClipboardStringInternal(Window window);
 
-        [DllImport(LIBRARY, EntryPoint = "glfwSetClipboardString", CallingConvention = CallingConvention.Cdecl)]
-        private static extern void SetClipboardString(Window window, byte[] bytes);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetClipboardString")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial void SetClipboardString(Window window, byte[] bytes);
 
         /// <summary>
         ///     Sets the file drop callback of the specified window, which is called when one or more dragged files
@@ -1006,12 +1096,14 @@ namespace GLFW
         /// <param name="window">The window whose callback to set.</param>
         /// <param name="dropCallback">The new file drop callback, or <c>null</c> to remove the currently set callback.</param>
         /// <returns>The previously set callback, or <c>null</c> if no callback was set or the library had not been initialized.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetDropCallback", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.FunctionPtr, MarshalTypeRef = typeof(FileDropCallback))]
-        public static extern FileDropCallback SetDropCallback(Window window, FileDropCallback dropCallback);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetDropCallback")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.FunctionPtr)]
+        public static partial FileDropCallback SetDropCallback(Window window, [MarshalAs(UnmanagedType.FunctionPtr)] FileDropCallback dropCallback);
 
-        [DllImport(LIBRARY, EntryPoint = "glfwGetMonitorName", CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr GetMonitorNameInternal(Monitor monitor);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetMonitorName")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial IntPtr GetMonitorNameInternal(Monitor monitor);
 
         /// <summary>
         ///     Creates a new custom cursor image that can be set for a window with glfwSetCursor.
@@ -1032,16 +1124,18 @@ namespace GLFW
         /// <param name="xHotspot">The x hotspot.</param>
         /// <param name="yHotspot">The y hotspot.</param>
         /// <returns>The created cursor.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwCreateCursor", CallingConvention = CallingConvention.Cdecl)]
-        public static extern Cursor CreateCursor(Image image, int xHotspot, int yHotspot);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwCreateCursor")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial Cursor CreateCursor(Image image, int xHotspot, int yHotspot);
 
         /// <summary>
         ///     This function destroys a cursor previously created with <see cref="CreateCursor" />. Any remaining cursors will be
         ///     destroyed by <see cref="Terminate" />.
         /// </summary>
         /// <param name="cursor">The cursor object to destroy.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwDestroyCursor", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void DestroyCursor(Cursor cursor);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwDestroyCursor")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void DestroyCursor(Cursor cursor);
 
         /// <summary>
         ///     Sets the cursor image to be used when the cursor is over the client area of the specified window.
@@ -1049,16 +1143,18 @@ namespace GLFW
         /// </summary>
         /// <param name="window">A window instance.</param>
         /// <param name="cursor">The cursor to set, or <see cref="Cursor.None" /> to switch back to the default arrow cursor.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetCursor", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetCursor(Window window, Cursor cursor);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetCursor")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void SetCursor(Window window, Cursor cursor);
 
         /// <summary>
         ///     Returns a cursor with a standard shape, that can be set for a window with <see cref="SetCursor" />.
         /// </summary>
         /// <param name="type">The type of cursor to create.</param>
         /// <returns>A new cursor ready to use or <see cref="Cursor.None" /> if an error occurred.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwCreateStandardCursor", CallingConvention = CallingConvention.Cdecl)]
-        public static extern Cursor CreateStandardCursor(CursorType type);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwCreateStandardCursor")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial Cursor CreateStandardCursor(CursorType type);
 
         /// <summary>
         ///     Gets the position of the cursor, in screen coordinates, relative to the upper-left corner of the
@@ -1075,8 +1171,9 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="x">The cursor x-coordinate, relative to the left edge of the client area.</param>
         /// <param name="y">The cursor y-coordinate, relative to the left edge of the client area.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwGetCursorPos", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void GetCursorPosition(Window window, out double x, out double y);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetCursorPos")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void GetCursorPosition(Window window, out double x, out double y);
 
         /// <summary>
         ///     Sets the position, in screen coordinates, of the cursor relative to the upper-left corner of the
@@ -1090,8 +1187,9 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="x">The desired x-coordinate, relative to the left edge of the client area.</param>
         /// <param name="y">The desired y-coordinate, relative to the left edge of the client area.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetCursorPos", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetCursorPosition(Window window, double x, double y);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetCursorPos")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void SetCursorPosition(Window window, double x, double y);
 
         /// <summary>
         ///     Sets the cursor position callback of the specified window, which is called when the cursor is moved.
@@ -1103,9 +1201,10 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="mouseCallback">The new callback, or <c>null</c> to remove the currently set callback.</param>
         /// <returns>The previously set callback, or<c>null</c> if no callback was set or the library had not been initialized.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetCursorPosCallback", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.FunctionPtr, MarshalTypeRef = typeof(MouseCallback))]
-        public static extern MouseCallback SetCursorPositionCallback(Window window, MouseCallback mouseCallback);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetCursorPosCallback")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.FunctionPtr)]
+        public static partial MouseCallback SetCursorPositionCallback(Window window, [MarshalAs(UnmanagedType.FunctionPtr)] MouseCallback mouseCallback);
 
         /// <summary>
         ///     Sets the cursor boundary crossing callback of the specified window, which is called when the cursor
@@ -1114,9 +1213,10 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="mouseCallback">The new callback, or <c>null</c> to remove the currently set callback.</param>
         /// <returns>The previously set callback, or <c>null</c> if no callback was set or the library had not been initialized.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetCursorEnterCallback", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.FunctionPtr, MarshalTypeRef = typeof(MouseEnterCallback))]
-        public static extern MouseEnterCallback SetCursorEnterCallback(Window window, MouseEnterCallback mouseCallback);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetCursorEnterCallback")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.FunctionPtr)]
+        public static partial MouseEnterCallback SetCursorEnterCallback(Window window, [MarshalAs(UnmanagedType.FunctionPtr)] MouseEnterCallback mouseCallback);
 
         /// <summary>
         ///     Sets the mouse button callback of the specified window, which is called when a mouse button is
@@ -1130,10 +1230,11 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="mouseCallback">The new callback, or <c>null</c> to remove the currently set callback.</param>
         /// <returns>The previously set callback, or <c>null</c> if no callback was set or the library had not been initialized.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetMouseButtonCallback", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.FunctionPtr, MarshalTypeRef = typeof(MouseButtonCallback))]
-        public static extern MouseButtonCallback SetMouseButtonCallback(Window window,
-            MouseButtonCallback mouseCallback);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetMouseButtonCallback")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.FunctionPtr)]
+        public static partial MouseButtonCallback SetMouseButtonCallback(Window window,
+            [MarshalAs(UnmanagedType.FunctionPtr)] MouseButtonCallback mouseCallback);
 
         /// <summary>
         ///     Sets the scroll callback of the specified window, which is called when a scrolling device is used,
@@ -1143,9 +1244,10 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="mouseCallback">	The new scroll callback, or <c>null</c> to remove the currently set callback.</param>
         /// <returns>The previously set callback, or <c>null</c> if no callback was set or the library had not been initialized.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetScrollCallback", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.FunctionPtr, MarshalTypeRef = typeof(MouseCallback))]
-        public static extern MouseCallback SetScrollCallback(Window window, MouseCallback mouseCallback);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetScrollCallback")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.FunctionPtr)]
+        public static partial MouseCallback SetScrollCallback(Window window, [MarshalAs(UnmanagedType.FunctionPtr)] MouseCallback mouseCallback);
 
         /// <summary>
         ///     Gets the last state reported for the specified mouse button to the specified window.
@@ -1158,8 +1260,9 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="button">The desired mouse button.</param>
         /// <returns>The input state of the <paramref name="button" />.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwGetMouseButton", CallingConvention = CallingConvention.Cdecl)]
-        public static extern InputState GetMouseButton(Window window, MouseButton button);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetMouseButton")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial InputState GetMouseButton(Window window, MouseButton button);
 
         /// <summary>
         ///     Sets the user-defined pointer of the specified window. The current value is retained until the window
@@ -1167,8 +1270,9 @@ namespace GLFW
         /// </summary>
         /// <param name="window">A window instance.</param>
         /// <param name="userPointer">The user pointer value.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetWindowUserPointer", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetWindowUserPointer(Window window, IntPtr userPointer);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetWindowUserPointer")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void SetWindowUserPointer(Window window, IntPtr userPointer);
 
         /// <summary>
         ///     Gets the current value of the user-defined pointer of the specified window. The initial value is
@@ -1176,8 +1280,9 @@ namespace GLFW
         /// </summary>
         /// <param name="window">A window instance.</param>
         /// <returns>The user-defined pointer.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwGetWindowUserPointer", CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr GetWindowUserPointer(Window window);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetWindowUserPointer")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial IntPtr GetWindowUserPointer(Window window);
 
         /// <summary>
         ///     Sets the size limits of the client area of the specified window. If the window is full screen, the
@@ -1193,8 +1298,9 @@ namespace GLFW
         /// <param name="minHeight">The minimum height of the client area.</param>
         /// <param name="maxWidth">The maximum width of the client area.</param>
         /// <param name="maxHeight">The maximum height of the client area.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetWindowSizeLimits", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetWindowSizeLimits(Window window, int minWidth, int minHeight, int maxWidth,
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetWindowSizeLimits")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void SetWindowSizeLimits(Window window, int minWidth, int minHeight, int maxWidth,
             int maxHeight);
 
         /// <summary>
@@ -1214,11 +1320,13 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="numerator">The numerator of the desired aspect ratio.</param>
         /// <param name="denominator">The denominator of the desired aspect ratio.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetWindowAspectRatio", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetWindowAspectRatio(Window window, int numerator, int denominator);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetWindowAspectRatio")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void SetWindowAspectRatio(Window window, int numerator, int denominator);
 
-        [DllImport(LIBRARY, EntryPoint = "glfwGetCurrentContext", CallingConvention = CallingConvention.Cdecl)]
-        private static extern Window GetCurrentContext();
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetCurrentContext")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial Window GetCurrentContext();
 
         /// <summary>
         ///     Gets the size, in millimeters, of the display area of the specified monitor.
@@ -1226,8 +1334,9 @@ namespace GLFW
         /// <param name="monitor">The monitor to query.</param>
         /// <param name="width">The width, in millimeters, of the monitor's display area.</param>
         /// <param name="height">The height, in millimeters, of the monitor's display area.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwGetMonitorPhysicalSize", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void GetMonitorPhysicalSize(Monitor monitor, out int width, out int height);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetMonitorPhysicalSize")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void GetMonitorPhysicalSize(Monitor monitor, out int width, out int height);
 
         /// <summary>
         ///     Gets the position, in screen coordinates, of the upper-left corner of the specified monitor.
@@ -1235,11 +1344,13 @@ namespace GLFW
         /// <param name="monitor">The monitor to query.</param>
         /// <param name="x">The monitor x-coordinate.</param>
         /// <param name="y">The monitor y-coordinate.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwGetMonitorPos", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void GetMonitorPosition(Monitor monitor, out int x, out int y);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetMonitorPos")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void GetMonitorPosition(Monitor monitor, out int x, out int y);
 
-        [DllImport(LIBRARY, EntryPoint = "glfwGetMonitors", CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr GetMonitors(out int count);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetMonitors")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial IntPtr GetMonitors(out int count);
 
         /// <summary>
         ///     Sets the character callback of the specified window, which is called when a Unicode character is
@@ -1259,9 +1370,10 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="charCallback">The new callback, or <c>null</c> to remove the currently set callback.</param>
         /// <returns>The previously set callback, or <c>null</c> if no callback was set or the library had not been initialized.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetCharCallback", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.FunctionPtr, MarshalTypeRef = typeof(CharCallback))]
-        public static extern CharCallback SetCharCallback(Window window, CharCallback charCallback);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetCharCallback")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.FunctionPtr)]
+        public static partial CharCallback SetCharCallback(Window window, [MarshalAs(UnmanagedType.FunctionPtr)] CharCallback charCallback);
 
         /// <summary>
         ///     Sets the character with modifiers callback of the specified window, which is called when a Unicode
@@ -1277,9 +1389,10 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="charCallback">The new callback, or <c>null</c> to remove the currently set callback.</param>
         /// <returns>The previously set callback, or <c>null</c> if no callback was set or an error occurred.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetCharModsCallback", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.FunctionPtr, MarshalTypeRef = typeof(CharModsCallback))]
-        public static extern CharModsCallback SetCharModsCallback(Window window, CharModsCallback charCallback);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetCharModsCallback")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.FunctionPtr)]
+        public static partial CharModsCallback SetCharModsCallback(Window window, [MarshalAs(UnmanagedType.FunctionPtr)] CharModsCallback charCallback);
 
         /// <summary>
         ///     Gets the last state reported for the specified key to the specified window.
@@ -1296,11 +1409,13 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="key">The key to query.</param>
         /// <returns>Either <see cref="InputState.Press" /> or <see cref="InputState.Release" />.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwGetKey", CallingConvention = CallingConvention.Cdecl)]
-        public static extern InputState GetKey(Window window, Keys key);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetKey")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial InputState GetKey(Window window, Keys key);
 
-        [DllImport(LIBRARY, EntryPoint = "glfwGetKeyName", CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr GetKeyNameInternal(Keys key, int scanCode);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetKeyName")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial IntPtr GetKeyNameInternal(Keys key, int scanCode);
 
         /// <summary>
         ///     Sets the framebuffer resize callback of the specified window, which is called when the framebuffer of
@@ -1309,9 +1424,10 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="sizeCallback">The new callback, or <c>null</c> to remove the currently set callback.</param>
         /// <returns>The previously set callback, or <c>null</c> if no callback was set or the library had not been initialized.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetFramebufferSizeCallback", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.FunctionPtr, MarshalTypeRef = typeof(SizeCallback))]
-        public static extern SizeCallback SetFramebufferSizeCallback(Window window, SizeCallback sizeCallback);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetFramebufferSizeCallback")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.FunctionPtr)]
+        public static partial SizeCallback SetFramebufferSizeCallback(Window window, [MarshalAs(UnmanagedType.FunctionPtr)] SizeCallback sizeCallback);
 
         /// <summary>
         ///     Sets the refresh callback of the specified window, which is called when the client area of the window
@@ -1324,9 +1440,10 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="callback">The new callback, or <c>null</c> to remove the currently set callback.</param>
         /// <returns>The previously set callback, or <c>null</c> if no callback was set or the library had not been initialized.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetWindowRefreshCallback", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.FunctionPtr, MarshalTypeRef = typeof(WindowCallback))]
-        public static extern WindowCallback SetWindowRefreshCallback(Window window, WindowCallback callback);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetWindowRefreshCallback")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.FunctionPtr)]
+        public static partial WindowCallback SetWindowRefreshCallback(Window window, [MarshalAs(UnmanagedType.FunctionPtr)] WindowCallback callback);
 
         /// <summary>
         ///     Sets the key callback of the specified window, which is called when a key is pressed, repeated or
@@ -1350,27 +1467,32 @@ namespace GLFW
         /// <param name="window">The new key callback, or <c>null</c> to remove the currently set callback.</param>
         /// <param name="keyCallback">The key callback.</param>
         /// <returns>The previously set callback, or <c>null</c> if no callback was set or the library had not been initialized.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetKeyCallback", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.FunctionPtr, MarshalTypeRef = typeof(KeyCallback))]
-        public static extern KeyCallback SetKeyCallback(Window window, KeyCallback keyCallback);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetKeyCallback")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.FunctionPtr)]
+        public static partial KeyCallback SetKeyCallback(Window window, [MarshalAs(UnmanagedType.FunctionPtr)] KeyCallback keyCallback);
 
         /// <summary>
         ///     Gets whether the specified joystick is present.
         /// </summary>
         /// <param name="joystick">The joystick to query.</param>
         /// <returns><c>true</c> if the joystick is present, or <c>false</c> otherwise.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwJoystickPresent", CallingConvention = CallingConvention.Cdecl)]
+        [LibraryImport(LIBRARY, EntryPoint = "glfwJoystickPresent")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool JoystickPresent(Joystick joystick);
+        public static partial bool JoystickPresent(Joystick joystick);
 
-        [DllImport(LIBRARY, EntryPoint = "glfwGetJoystickName", CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr GetJoystickNameInternal(Joystick joystick);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetJoystickName")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial IntPtr GetJoystickNameInternal(Joystick joystick);
 
-        [DllImport(LIBRARY, EntryPoint = "glfwGetJoystickAxes", CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr GetJoystickAxes(Joystick joystic, out int count);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetJoystickAxes")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial IntPtr GetJoystickAxes(Joystick joystic, out int count);
 
-        [DllImport(LIBRARY, EntryPoint = "glfwGetJoystickButtons", CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr GetJoystickButtons(Joystick joystick, out int count);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetJoystickButtons")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial IntPtr GetJoystickButtons(Joystick joystick, out int count);
 
         /// <summary>
         ///     Sets the joystick configuration callback, or removes the currently set callback.
@@ -1378,9 +1500,10 @@ namespace GLFW
         /// </summary>
         /// <param name="callback">The new callback, or <c>null</c> to remove the currently set callback.</param>
         /// <returns>The previously set callback, or <c>null</c> if no callback was set or the library had not been initialized.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetJoystickCallback", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.FunctionPtr, MarshalTypeRef = typeof(JoystickCallback))]
-        public static extern JoystickCallback SetJoystickCallback(JoystickCallback callback);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetJoystickCallback")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.FunctionPtr)]
+        public static partial JoystickCallback SetJoystickCallback([MarshalAs(UnmanagedType.FunctionPtr)] JoystickCallback callback);
 
         /// <summary>
         ///     Sets the monitor configuration callback, or removes the currently set callback. This is called when a
@@ -1388,9 +1511,10 @@ namespace GLFW
         /// </summary>
         /// <param name="monitorCallback">The new callback, or <c>null</c> to remove the currently set callback.</param>
         /// <returns>The previously set callback, or <c>null</c> if no callback was set or the library had not been initialized.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetMonitorCallback", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.FunctionPtr, MarshalTypeRef = typeof(MonitorCallback))]
-        public static extern MonitorCallback SetMonitorCallback(MonitorCallback monitorCallback);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetMonitorCallback")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.FunctionPtr)]
+        public static partial MonitorCallback SetMonitorCallback([MarshalAs(UnmanagedType.FunctionPtr)] MonitorCallback monitorCallback);
 
         /// <summary>
         ///     Sets the iconification callback of the specified window, which is called when the window is iconified
@@ -1399,9 +1523,10 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="callback">The new callback, or <c>null</c> to remove the currently set callback.</param>
         /// <returns>The previously set callback, or <c>null</c> if no callback was set or the library had not been initialized.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetWindowIconifyCallback", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.FunctionPtr, MarshalTypeRef = typeof(IconifyCallback))]
-        public static extern IconifyCallback SetWindowIconifyCallback(Window window, IconifyCallback callback);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetWindowIconifyCallback")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        [return: MarshalAs(UnmanagedType.FunctionPtr)]
+        public static partial IconifyCallback SetWindowIconifyCallback(Window window, [MarshalAs(UnmanagedType.FunctionPtr)] IconifyCallback callback);
 
         /// <summary>
         ///     Sets an input mode option for the specified window.
@@ -1409,8 +1534,9 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="mode">The mode to set a new value for.</param>
         /// <param name="value">The new value of the specified input mode.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwSetInputMode", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetInputMode(Window window, InputMode mode, int value);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwSetInputMode")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void SetInputMode(Window window, InputMode mode, int value);
 
         /// <summary>
         ///     Gets the value of an input option for the specified window.
@@ -1418,8 +1544,9 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="mode">The mode to query.</param>
         /// <returns>Dependent on mode being queried.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwGetInputMode", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int GetInputMode(Window window, InputMode mode);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetInputMode")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial int GetInputMode(Window window, InputMode mode);
 
         /// <summary>
         ///     Returns the position, in screen coordinates, of the upper-left corner of the work area of the specified
@@ -1435,12 +1562,14 @@ namespace GLFW
         /// <param name="y">The y-coordinate.</param>
         /// <param name="width">The monitor width.</param>
         /// <param name="height">The monitor height.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwGetMonitorWorkarea", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void GetMonitorWorkArea(IntPtr monitor, out int x, out int y, out int width,
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetMonitorWorkarea")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void GetMonitorWorkArea(IntPtr monitor, out int x, out int y, out int width,
             out int height);
 
-        [DllImport(LIBRARY, EntryPoint = "glfwGetProcAddress", CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr GetProcAddress(byte[] procName);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetProcAddress")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial IntPtr GetProcAddress(byte[] procName);
 
         /// <summary>
         ///     Sets hints for the next call to <see cref="CreateWindow" />. The hints, once set, retain their values
@@ -1454,8 +1583,9 @@ namespace GLFW
         /// </summary>
         /// <param name="hint">The hint.</param>
         /// <param name="value">The value.</param>
-        [DllImport(LIBRARY, EntryPoint = "glfwWindowHint", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void WindowHint(Hint hint, int value);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwWindowHint")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial void WindowHint(Hint hint, int value);
 
         /// <summary>
         ///     Gets the value of the specified window attribute.
@@ -1463,11 +1593,13 @@ namespace GLFW
         /// <param name="window">A window instance.</param>
         /// <param name="attribute">The attribute to retrieve.</param>
         /// <returns>The value of the <paramref name="attribute" />.</returns>
-        [DllImport(LIBRARY, EntryPoint = "glfwGetWindowAttrib", CallingConvention = CallingConvention.Cdecl)]
-        private static extern int GetWindowAttribute(Window window, int attribute);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetWindowAttrib")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial int GetWindowAttribute(Window window, int attribute);
 
-        [DllImport(LIBRARY, EntryPoint = "glfwGetError", CallingConvention = CallingConvention.Cdecl)]
-        private static extern ErrorCode GetErrorPrivate(out IntPtr description);
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetError")]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        private static partial ErrorCode GetErrorPrivate(out IntPtr description);
 
         #endregion
 
@@ -1762,7 +1894,7 @@ namespace GLFW
         /// </summary>
         /// <param name="hint">The hint.</param>
         /// <param name="value">The value.</param>
-        public static void WindowHint(Hint hint, bool value)
+        public static void WindowHint(Hint hint, [MarshalAs(UnmanagedType.Bool)] bool value)
         {
             WindowHint(hint, value ? Constants.True : Constants.False);
         }

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <RootNamespace>GLFW</RootNamespace>
     <Authors>Eric Freed</Authors>
     <AssemblyVersion>1.0.1.0</AssemblyVersion>
@@ -16,7 +16,7 @@
     <PackageTags>GLFW OpenGL OpenGLES ES C# F# VB Csharp CS Windows Mono Linux Mac OSX Context NET Standard Core Framework Game Native Form Cross Platform Unix netcore netstandard dotnet winform</PackageTags>
     <Copyright>Copyright © Eric Freed 2018</Copyright>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <!-- <GeneratePackageOnBuild>true</GeneratePackageOnBuild> -->
     <Version>1.0.1</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageVersion>3.3.1</PackageVersion>
@@ -28,13 +28,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DocumentationFile>bin\Release\netstandard2.0\GLFW.NET.xml</DocumentationFile>
     <DefineConstants>TRACE;RELEASE;NETSTANDARD;NETSTANDARD2_0;GLFW_VERSION_3_3</DefineConstants>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DocumentationFile>bin\Debug\netstandard2.0\GLFW.NET.xml</DocumentationFile>
     <DefineConstants>TRACE;DEBUG;NETSTANDARD;NETSTANDARD2_0;GLFW_VERSION_3_3</DefineConstants>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
 
 </Project>
