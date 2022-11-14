@@ -131,7 +131,7 @@ namespace GLFW
     /// <param name="window">The window handle.</param>
     /// <param name="focusing"><c>true</c> if window is iconified; otherwise <c>false</c> if restoring.</param>
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void IconifyCallback(IntPtr window, bool focusing);
+    public delegate void IconifyCallback(Window window, bool focusing);
 
     /// <summary>
     ///     This is the function signature for window content scale callback functions.
