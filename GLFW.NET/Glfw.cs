@@ -344,11 +344,6 @@ namespace GLFW
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool JoystickIsGamepad(int joystickId);
 
-        [LibraryImport(LIBRARY, EntryPoint = "glfwUpdateGamepadMappings")]
-        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool UpdateGamepadMappings([NotNull] byte[] mappings);
-
         /// <summary>
         ///     Parses the specified string and updates the internal list with any gamepad mappings it finds.
         ///     <para>
@@ -358,15 +353,11 @@ namespace GLFW
         /// </summary>
         /// <param name="mappings">The string containing the gamepad mappings.</param>
         /// <returns><c>true</c> if successful, or <c>false</c> if an error occurred.</returns>
-        public static bool UpdateGamepadMappings(string mappings)
-        {
-            return UpdateGamepadMappings(Encoding.ASCII.GetBytes(mappings));
-        }
-
-        [LibraryImport(LIBRARY, EntryPoint = "glfwGetGamepadName")]
+        [LibraryImport(LIBRARY, EntryPoint = "glfwUpdateGamepadMappings", StringMarshalling = StringMarshalling.Utf8)]
         [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
-        private static partial IntPtr GetGamepadNamePrivate(int gamepadId);
-
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool UpdateGamepadMappings(string mappings);
+        
         /// <summary>
         ///     Returns the human-readable name of the gamepad from the gamepad mapping assigned to the specified joystick.
         /// </summary>
@@ -375,11 +366,15 @@ namespace GLFW
         ///     The name of the gamepad, or <c>null</c> if the joystick is not present, does not have a mapping or an error
         ///     occurred.
         /// </returns>
-        public static string GetGamepadName(int gamepadId)
-        {
-            var ptr = GetGamepadNamePrivate(gamepadId);
-            return ptr == IntPtr.Zero ? null : Util.PtrToStringUTF8(ptr);
-        }
+        [LibraryImport(LIBRARY, EntryPoint = "glfwGetGamepadName", StringMarshalling = StringMarshalling.Utf8)]
+        [UnmanagedCallConv(CallConvs = new [] { typeof(CallConvCdecl) })]
+        public static partial string GetGamepadName(int gamepadId);
+
+        // public static string GetGamepadName(int gamepadId)
+        // {
+        //     var ptr = GetGamepadNamePrivate(gamepadId);
+        //     return ptr == IntPtr.Zero ? null : Util.PtrToStringUTF8(ptr);
+        // }
 
         /// <summary>
         ///     Retrieves the state of the specified joystick remapped to an Xbox-like gamepad.

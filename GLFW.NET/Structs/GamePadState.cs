@@ -11,11 +11,11 @@ namespace GLFW
     [NativeMarshalling(typeof(GamePadStateMarshaller))]
     public struct GamePadState
     {
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 15)]
-        internal readonly InputState[] states;
+        //[MarshalAs(UnmanagedType.ByValArray, SizeConst = 15)]
+        internal readonly InputState[] states = new InputState[15];
 
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 6)]
-        internal readonly float[] axes;
+        //[MarshalAs(UnmanagedType.ByValArray, SizeConst = 6)]
+        internal readonly float[] axes = new float[6];
 
         /// <summary>
         ///     Gets the state of the specified <paramref name="button" />.
@@ -30,6 +30,11 @@ namespace GLFW
         /// <param name="axis">The axis to retrieve the value of.</param>
         /// <returns>The axis value, in the range of <c>-1.0</c> and <c>1.0</c> inclusive.</returns>
         public float GetAxis(GamePadAxis axis) { return axes[(int) axis]; }
+
+        /// <summary>
+        ///     Default constructor
+        /// </summary>
+        public GamePadState () { }
     }
 
     [CustomMarshaller(typeof(GamePadState), MarshalMode.ManagedToUnmanagedIn, typeof(GamePadStateMarshaller))]
@@ -63,6 +68,9 @@ namespace GLFW
 
         public static unsafe GamePadState ConvertToManaged (GamePadStateUnmanaged gamePadState)
         {
+            if (gamePadState.Axes == null || gamePadState.Buttons == null)
+                return new GamePadState();
+
             var state = new GamePadState();
 
             fixed (GLFW.InputState* b = &state.states[0])
